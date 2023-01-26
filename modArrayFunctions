@@ -1,0 +1,68 @@
+Function createDataArray(Sheet As Worksheet, Optional Structured As Boolean)
+
+    If Structured = True Then
+        createStructuredDataArray (Sheet)
+    Else
+        createNotStructuredDataArray (Sheet)
+    End If
+
+End Function
+
+Private Function createStructuredDataArray(Sheet As Worksheet)
+    Dim dataArray() As String
+    Dim L As Integer
+    Dim C As Integer
+    Dim lastRow As Long, lastColumn As Long
+    Dim Planilha As Worksheet
+
+    Set Planilha = Sheet
+    
+    lastRow = Planilha.Cells(Rows.Count, 1).End(xlUp).Row
+    lastColumn = Planilha.Cells(1, Columns.Count).End(xlToLeft).Column
+
+
+    ReDim dataArray(1 To lastRow, 1 To lastColumn)
+
+    On Error Resume Next
+    For L = 1 To lastRow
+        For C = 1 To lastColumn
+    
+            dataArray(L, C) = Planilha.Cells(1, C).Value & ":" & Planilha.Cells(L + 1, C).Value
+            
+        Next C
+    Next L
+    On Error GoTo 0
+    
+    createStructuredDataArray = dataArray
+    
+End Function
+
+Private Function createNotStructuredDataArray(Sheet)
+    Dim dataArray() As String
+    Dim L As Integer
+    Dim C As Integer
+    Dim lastRow As Long, lastColumn As Long
+    Dim Planilha As Worksheet
+
+    Set Planilha = Sheet
+    
+    lastRow = Planilha.Cells(Rows.Count, 1).End(xlUp).Row
+    lastColumn = Planilha.Cells(1, Columns.Count).End(xlToLeft).Column
+
+
+    ReDim dataArray(1 To lastRow, 1 To lastColumn)
+
+    On Error Resume Next
+    For L = 1 To lastRow
+        For C = 1 To lastColumn
+    
+            dataArray(L, C) = Planilha.Cells(L + 1, C).Value
+            
+        Next C
+    Next L
+    On Error GoTo 0
+    
+    createNotStructuredDataArray = dataArray
+    
+End Function
+
