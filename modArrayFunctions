@@ -8,8 +8,8 @@ Function createDataArray(Sheet As Worksheet, Optional Structured As Boolean)
 
 End Function
 
-Private Function createStructuredDataArray(Sheet As Worksheet)
-    Dim dataArray() As String
+Private Function createStructuredDataArray(Sheet As Worksheet) As Variant
+    Dim DataArray() As Variant
     Dim L As Integer
     Dim C As Integer
     Dim lastRow As Long, lastColumn As Long
@@ -21,24 +21,28 @@ Private Function createStructuredDataArray(Sheet As Worksheet)
     lastColumn = Planilha.Cells(1, Columns.Count).End(xlToLeft).Column
 
 
-    ReDim dataArray(1 To lastRow, 1 To lastColumn)
+    ReDim DataArray(0 To lastRow - 2, 0 To lastColumn - 1)
 
     On Error Resume Next
-    For L = 1 To lastRow
-        For C = 1 To lastColumn
+    For L = 0 To lastRow - 2
+        For C = 0 To lastColumn
     
-            dataArray(L, C) = Planilha.Cells(1, C).Value & ":" & Planilha.Cells(L + 1, C).Value
-            
+            If C = 0 Then
+                DataArray(L, C) = "Row" & splitSeparator & L + 2
+            Else
+                DataArray(L, C) = Planilha.Cells(1, C).Value & splitSeparator & Planilha.Cells(L + 2, C).Value
+            End If
+
         Next C
     Next L
     On Error GoTo 0
     
-    createStructuredDataArray = dataArray
+    createStructuredDataArray = DataArray
     
 End Function
 
 Private Function createNotStructuredDataArray(Sheet)
-    Dim dataArray() As String
+    Dim DataArray() As String
     Dim L As Integer
     Dim C As Integer
     Dim lastRow As Long, lastColumn As Long
@@ -50,19 +54,124 @@ Private Function createNotStructuredDataArray(Sheet)
     lastColumn = Planilha.Cells(1, Columns.Count).End(xlToLeft).Column
 
 
-    ReDim dataArray(1 To lastRow, 1 To lastColumn)
+    ReDim DataArray(0 To lastRow - 2, 0 To lastColumn - 1)
 
     On Error Resume Next
-    For L = 1 To lastRow
-        For C = 1 To lastColumn
-    
-            dataArray(L, C) = Planilha.Cells(L + 1, C).Value
+    For L = 0 To lastRow - 2
+        For C = 0 To lastColumn
             
+            If C = 0 Then
+                DataArray(L, C) = L + 2
+            Else
+                DataArray(L, C) = Planilha.Cells(L + 2, C).Value
+            End If
+
         Next C
     Next L
     On Error GoTo 0
     
-    createNotStructuredDataArray = dataArray
+    createNotStructuredDataArray = DataArray
     
 End Function
 
+Function splitSeparator() As String
+    splitSeparator = ";;;"
+End Function
+
+Function searchStructuredData(DataArray(), Titulos As String, Chave As String) As Variant
+    Dim Dados() As Variant
+    Dim L As Long, C As Long
+    Dim J As Long
+    Dim linha() As String
+
+    'Inicia o loop
+    For L = 0 To UBound(DataArray, 1)
+        For C = 0 To UBound(DataArray, 2)
+            
+            'Split dado
+            linha = Split(DataArray(L, C), ";;;")
+
+            'Verifica se as informações são iguais
+            If linha(0) = Titulos And InStr(linha(1), Chave) > 0 Then
+
+                'Registra os dados
+                If (Not Dados) = -1 Then
+                    ReDim Dados(0, UBound(DataArray, 2))
+                    
+                    For i = 0 To UBound(DataArray, 2)
+                        Dados(0, i) = DataArray(L, i)
+                    Next
+                    
+                Else
+                    'Verifica se os dados já existem em Dados
+                    For i = 0 To UBound(Dados)
+                        If DataArray(L, 0) = Dados(i, 0) Then GoTo NextL
+                    Next
+                    
+                    Dados = addDataArray2D(Dados, DataArray(), CStr(L))
+                
+                End If
+                            
+                
+                            
+            End If
+        Next C
+NextL:
+    Next L
+    searchStructuredData = Dados
+End Function
+
+Function addDataArray2D(OriginalArray(), AddData() As Variant, Optional Reg As String)
+    Dim Matriz() As Variant
+    
+    Matriz = OriginalArray
+    
+    Select Case Reg
+        Case ""
+            Total = UBound(OriginalArray, 1) + UBound(AddData, 1) + 1
+            ReDim Matriz(Total, UBound(OriginalArray, 2))
+            
+            For i = 0 To UBound(OriginalArray)
+                For J = 0 To UBound(OriginalArray, 2)
+                    Matriz(i, J) = OriginalArray(i, J)
+                Next
+            Next
+            
+            For i = 0 To UBound(AddData)
+                For J = 0 To UBound(Matriz, 2)
+                    Matriz(UBound(OriginalArray) + i + 1, J) = AddData(i, J)
+                Next
+            Next
+            addDataArray2D = Matriz
+        Case Else
+            Total = UBound(OriginalArray, 1) + 1
+            ReDim Matriz(Total, UBound(OriginalArray, 2))
+            
+            For i = 0 To UBound(OriginalArray)
+                For J = 0 To UBound(OriginalArray, 2)
+                    Matriz(i, J) = OriginalArray(i, J)
+                Next
+            Next
+            
+            For J = 0 To UBound(OriginalArray, 2)
+                Matriz(UBound(Matriz, 1), J) = AddData(Reg, J)
+            Next
+            
+            addDataArray2D = Matriz
+        End Select
+End Function
+
+Function arrayDimension(Matriz() As Variant) As Integer
+    Dim Dimensions As Integer
+    
+    Dimensions = 0
+    
+    On Error GoTo pronto
+    Do While UBound(Matriz, Dimensions + 1) > 0
+        Dimensions = Dimensions + 1
+    Loop
+
+pronto:
+    If Err.Number = 9 Then arrayDimension = Dimensions
+
+End Function
